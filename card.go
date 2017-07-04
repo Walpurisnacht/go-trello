@@ -34,6 +34,7 @@ type Card struct {
 	IdList                string   `json:"idList"`
 	IdMembers             []string `json:"idMembers"`
 	IdMembersVoted        []string `json:"idMembersVoted"`
+	IdLabel               []string `json:"idLabels"`
 	ManualCoverAttachment bool     `json:"manualCoverAttachment"`
 	Closed                bool     `json:"closed"`
 	Pos                   float64  `json:"pos"`
@@ -227,6 +228,11 @@ func (c *Card) Delete() error {
 	return err
 }
 
+func (c *Card) DeleteLabel(id string) error {
+	_, err := c.client.Delete("/cards/" + c.Id + "/idLabels/" + id)
+	return err
+}
+
 //If mode is true, card is archived, otherwise it's unarchived (returns to the board)
 func (c *Card) Archive(mode bool) error {
 	payload := url.Values{}
@@ -270,8 +276,7 @@ func (c *Card) SetDescription(desc string) (*Card, error) {
 	return &card, nil
 }
 
-//Returns an array of cards labels ids
-func (c *Card) AddLabel(id string) ([]string, error) {
+func (c *Card) AddLabel(id string) (*Label, error) {
 	payload := url.Values{}
 	payload.Set("value", id)
 
@@ -280,12 +285,13 @@ func (c *Card) AddLabel(id string) ([]string, error) {
 		return nil, err
 	}
 
-	var ids []string
-	if err = json.Unmarshal(body, &ids); err != nil {
+	var label Label
+	if err = json.Unmarshal(body, &label); err != nil {
 		return nil, err
 	}
 
-	return ids, nil
+	label.client = c.client
+	return &label, nil
 }
 
 func (c *Card) AddNewLabel(name, color string) (*Label, error) {
